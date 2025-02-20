@@ -6,6 +6,11 @@ if [[ -z "$tag" ]]; then
    exit 1
 fi
 
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+. "$HOME/.cargo/env"
+rustup toolchain install 1.82.0
+rustup target add --toolchain 1.82.0 riscv64gc-unknown-linux-musl
+
 git clone https://github.com/servo/mozjs.git --branch "$tag" --single-branch
 cd mozjs && cat mozjs-sys/mozjs/build/autoconf/config.sub | sed 's/riscv64 | riscv64be/riscv64 | riscv64be | riscv64gc/g' > a && mv a mozjs-sys/mozjs/build/autoconf/config.sub
 

@@ -11,23 +11,16 @@ on:
 jobs:
   riscv64-cross-compile:
     runs-on: self-hosted
-    container: ghcr.io/huancheng-trili/cross-riscv64gc-unknown-linux-musl:5f9a19d
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.82.0
-        with:
-          targets: riscv64gc-unknown-linux-musl
-      - name: Dummy
-        shell: bash
-        run: uname -a
       - name: Build
         shell: bash
-        run: ./run.sh ${{ inputs.mozjs-tag }}
+        run: mkdir out && docker run --rm -v $(pwd)/run.sh:/test/run.sh -v $(pwd)/out:/out  ghcr.io/huancheng-trili/cross-riscv64gc-unknown-linux-musl:5f9a19d sh -c "cd /test && ./run.sh ${{ inputs.mozjs-tag }} && mv ./mozjs/target/libmozjs-riscv64gc-unknown-linux-musl.tar.gz /out"
       - name: Upload artifact
         if: ${{ matrix.features != 'debugmozjs' }}
         uses: actions/upload-artifact@v4
         with:
-          path: ./mozjs/target/libmozjs-riscv64gc-unknown-linux-musl.tar.gz
+          path: ./out/libmozjs-riscv64gc-unknown-linux-musl.tar.gz
           name: libmozjs-riscv64gc-unknown-linux-musl.tar.gz
   publish-release:
     name: Check version and publish release
@@ -45,5 +38,7 @@ jobs:
           RELEASE_TAG=${{ inputs.mozjs-tag }}
           gh release create ${RELEASE_TAG} ./*.tar.gz
           echo "RELEASE_TAG=${RELEASE_TAG}" >> ${GITHUB_OUTPUT}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       release-tag: ${{ steps.check-tag.outputs.RELEASE_TAG }}
